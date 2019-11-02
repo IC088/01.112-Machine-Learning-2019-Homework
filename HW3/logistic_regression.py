@@ -10,7 +10,7 @@ y = np.array(y,dtype='float64')
 x = np.array(x,dtype='float64')
 
 
-def cost_function(theta, x, y):
+def n_cost_function(theta, x, y):
     '''
     X - dataframe for the training set
     y - dataframe for the actual set
@@ -22,7 +22,19 @@ def cost_function(theta, x, y):
     cost = np.log(1 + np.exp(np.multiply(-y, pred)))
     return cost.mean()
 
-def d_cost(theta, x, y):
+def n_likelihood_function(theta, x, y):
+    '''
+    X - dataframe for the training set
+    y - dataframe for the actual set
+    theta - features
+    '''
+#     ones = np.ones(shape=x.shape) #biases
+#     X = np.hstack((x,ones))
+    pred = np.dot(x, theta)  # 3000, 1 shape
+    cost = np.log(1/(1 + np.exp(np.multiply(-y, pred))))
+    return cost.mean()
+
+def n_d_cost(theta, x, y):
     '''
     X - dataframe for the training set
     y - dataframe for the actual set
@@ -32,11 +44,12 @@ def d_cost(theta, x, y):
     top = np.multiply(-y, x)
     pred = np.dot(x, theta)
     bot = 1 + np.exp(np.multiply(y, pred))
-    return (top/bot).mean(axis=0)
-
+    return (top/bot)
 #     a = np.random.choice(range(n), n, replace=False)
 
-def sgd(arrx, arry,learning_rate=0.01, epochs=50):
+#     a = np.random.choice(range(n), n, replace=False)
+from random import randrange
+def n_sgd(arrx, arry,learning_rate=0.01, epochs=50):
     theta = np.zeros(shape=(21,1))
     ones = np.ones(shape = (3000,1))
     arrx_array = np.hstack((ones, arrx))
@@ -44,30 +57,52 @@ def sgd(arrx, arry,learning_rate=0.01, epochs=50):
     n = len(arrx)
     minloss = 10**10
     bestTheta = 0
-    err = []       
+    err = []  
+    like = []
     for j in range(epochs): #This is for the number of training iteration.
-        loss = cost_function(theta,arrx_array, arry_array)
-        theta -= (learning_rate * d_cost(theta,arrx_array,arry_array)).reshape(21,1)         
+        i = randrange(n)
+        loss = n_cost_function(theta,arrx_array, arry_array)
+        likelihood = n_likelihood_function(theta,arrx_array, arry_array)
+        theta -= (learning_rate * n_d_cost(theta,arrx_array[i],arry_array[i]).reshape(21,1))      
         if loss < minloss:
             minloss = loss
             bestTheta = np.copy(theta)
         err.append(loss)
+        like.append(likelihood)
         if (j + 1) % 100 == 0:
             # save weights of the function
             np.save(f'./models/model_{j+1}',theta, allow_pickle=True, fix_imports=True)
             print(f'>>> Model_{j+1} saved to models')
-    return bestTheta , minloss, err
+    return bestTheta , minloss, err, like
 
-theta, loss, err = sgd(x,y,0.1,10000)
+n_theta, n_loss, n_err, n_like = n_sgd(x,y,0.1,10000)
 
 
-print(f'Theta: {theta} \n')
+print(f'Theta: {N_theta} \n')
 
-print(f'Loss: {loss} \n')
+print(f'Loss: {n_loss} \n')
 
-print(f'Training Error: {err} \n')
+print(f'Training Error: {n_err} \n')
 
 
 import matplotlib.pyplot as plt
-plt.plot(err)
+
+
+print("--- Cost for every 100 iteration ---")
+plt.title('Cost for every 100 iteration')
+plt.ylabel('Cost')
+plt.xlabel('Number of iterations (100)')
+cost100 = n_err[0::100]
+plt.plot(np.arange(0,len(cost100)),cost100[0:],'-r', label='Cost')
+plt.legend()
+plt.show()
+
+
+print("--- Log-likelihood for every 100 iteration ---")
+plt.title('Log-likelihood for every 100 iteration')
+plt.ylabel('Log-likelihood')
+plt.xlabel('Number of iterations (100)')
+like100 = n_like[0::100]
+plt.plot(np.arange(0,len(like100)),like100[0:],'-r', label='Log-likelihood')
+plt.legend()
 plt.show()
